@@ -1,3 +1,4 @@
+// Import package yang diperlukan
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
@@ -5,22 +6,21 @@ import 'dart:convert';
 
 // Fungsi main untuk menjalankan aplikasi
 void main() => runApp(MyApp());
+
 // URL untuk mengambil data post dari API
 String url = "https://jsonplaceholder.typicode.com/posts";
-String url2 = "https://calm-plum-jaguar-tutu.cyclic.app/todos";
 
 // Fungsi untuk mengambil satu post dari API
-Future<List<ToDo>> fetchPost() async {
+Future<List<Post>> fetchPost() async {
   // Mengirimkan permintaan GET ke URL yang ditentukan
-  final response = await http.get(Uri.parse(url2));
+  final response = await http.get(Uri.parse(url));
+
   // Memeriksa apakah kode status respons adalah 200 (HTTP OK)
   if (response.statusCode == 200) {
     // Jika respons berhasil, parse JSON dan kembalikan objek Post
-    Map<String, dynamic> jsonResponse = json.decode(response.body);
-    List<dynamic> data = jsonResponse['data'];
-
-    List<ToDo> todo = data.map((dynamic item) => ToDo.fromJson(item)).toList();
-    return todo;
+    List<dynamic> body = json.decode(response.body);
+    List<Post> posts = body.map((dynamic item) => Post.fromJson(item)).toList();
+    return posts;
   } else {
     // Jika respons tidak berhasil, lemparkan pengecualian
     throw Exception('Gagal memuat post');
@@ -28,24 +28,27 @@ Future<List<ToDo>> fetchPost() async {
 }
 
 // Kelas Post yang mewakili satu post
-class ToDo {
-  final String id;
-  final String todoName;
-  final bool isComplete;
+class Post {
+  final int userId;
+  final int id;
+  final String title;
+  final String body;
 
   // Konstruktor untuk membuat objek Post
-  ToDo({
+  Post({
+    required this.userId,
     required this.id,
-    required this.todoName,
-    required this.isComplete,
+    required this.title,
+    required this.body,
   });
 
   // Metode pabrik untuk mengonversi data JSON menjadi objek Post
-  factory ToDo.fromJson(Map<String, dynamic> json) {
-    return ToDo(
-      id: json['_id'] ?? '',
-      todoName: json['todoName'] ?? '',
-      isComplete: json['isComplete'] ?? false,
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      userId: json['userId'] ?? 0,
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      body: json['body'] ?? '',
     );
   }
 }
@@ -73,17 +76,17 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   // Mengambil satu post saat widget dibuat
-  final Future<List<ToDo>> posts = fetchPost();
+  final Future<List<Post>> posts = fetchPost();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ToDo dari API'),
+        title: Text('Post dari API'),
         centerTitle: true,
       ),
       body: Center(
-        child: FutureBuilder<List<ToDo>>(
+        child: FutureBuilder<List<Post>>(
           future: posts,
           builder: (context, snapshot) {
             // Memeriksa status koneksi dari Future
@@ -109,21 +112,21 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: const EdgeInsets.all(7),
                         child: ListTile(
                           title: Text(
-                            "todoname : ${snapshot.data![index].todoName}",
+                            "Title : ${snapshot.data![index].title}",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
-                          subtitle: Text(
-                              "isComplete : ${snapshot.data![index].isComplete}"),
+                          subtitle:
+                              Text("Body : ${snapshot.data![index].body}"),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    DetailScreen(todo: snapshot.data![index]),
+                                    DetailScreen(post: snapshot.data![index]),
                               ),
                             );
                           },
@@ -142,15 +145,15 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class DetailScreen extends StatelessWidget {
-  final ToDo todo;
+  final Post post;
 
-  DetailScreen({required this.todo});
+  DetailScreen({required this.post});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(todo.todoName),
+        title: Text(post.title),
       ),
       body: Padding(
         padding: EdgeInsets.all(16),
@@ -158,17 +161,25 @@ class DetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'User Id: ${todo.id}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Todo Name: ${todo.todoName}',
+              'User Id: ${post.userId}',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            Text('isComplete: ${todo.isComplete}',
+            Text('ID: ${post.id}',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 8),
+            Text(
+              "Title : ${post.title}",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            Text('Body:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text(post.body),
           ],
         ),
       ),
